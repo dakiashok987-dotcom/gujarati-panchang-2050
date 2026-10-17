@@ -17,6 +17,7 @@ nav button{flex:1;background:none;color:var(--t);border-radius:0;font-size:13px}
 .gr div{min-height:50px;border-radius:8px;padding:2px;font-size:15px}.gr .c{background:var(--c);border:1px solid var(--b)}
 .td{outline:3px solid var(--p)}.sel{background:var(--b)!important}.rd{color:var(--r)}.dot{font-size:9px;color:var(--p)}
 .row{display:flex;gap:8px;align-items:center;justify-content:space-between}.sm{font-size:14px;opacity:.8}.tag{font-size:12px;border:1px solid var(--p);border-radius:8px;padding:0 6px}
+.bphoto{width:64px;height:64px;object-fit:cover;border-radius:12px;border:1px solid var(--b);flex-shrink:0}.bphoto.big{width:96px;height:96px}.photo-preview{display:flex;gap:12px;align-items:center;margin:6px 0 10px}.photo-note{font-size:13px;opacity:.8}
 </style></head><body><h1>🪔 ગુજરાતી પંચાંગ 2050</h1><div class="w" id="app"></div>
 <nav id="nav"></nav>
 <script>
@@ -40,7 +41,7 @@ const bdOn=k=>{const[y,m,d]=k.split('-').map(Number);return S.bd.filter(b=>{cons
 const age=(b,y)=>b.y?y-b.y:null;
 function nextBd(b){const t=todayK(),y=+t.slice(0,4);for(const yy of[y,y+1]){const o=occ(b,yy),k=key(yy,o[0],o[1]);if(k>=t)return{k,y:yy,days:Math.round((new Date(k)-new Date(t))/864e5)}}}
 const upcoming=n=>S.bd.map(b=>({b,...nextBd(b)})).sort((a,c)=>a.days-c.days).slice(0,n);
-const bdRow=u=>`<div class="card row"><div><b>${E(u.b.name)}</b><div class="sm">${G(+u.k.slice(8))} ${MN[+u.k.slice(5,7)-1]}${age(u.b,u.y)!=null?' • ઉંમર '+G(age(u.b,u.y))+' વર્ષ':''} • ${u.days==0?'આજે':u.days==1?'કાલે':G(u.days)+' દિવસ બાકી'}</div></div></div>`;
+const bdRow=u=>`<div class="card row">${u.b.photo?`<img class="bphoto" src="${u.b.photo}" alt="${E(u.b.name)}">`:''}<div style="flex:1"><b>${E(u.b.name)}</b><div class="sm">${G(+u.k.slice(8))} ${MN[+u.k.slice(5,7)-1]}${age(u.b,u.y)!=null?' • ઉંમર '+G(age(u.b,u.y))+' વર્ષ':''} • ${u.days==0?'આજે':u.days==1?'કાલે':G(u.days)+' દિવસ બાકી'}</div></div></div>`;
 // notifications
 const N=()=>window.Capacitor?.Plugins?.LocalNotifications;
 async function checkPerm(){const n=N();if(!n){perm='web';return}perm=(await n.checkPermissions()).display}
@@ -62,7 +63,7 @@ const go=t=>{tab=t;edit=null;render()};
 function dayCard(k){const dt=new Date(k+'T00:00:00'),fs=fest(k),bs=bdOn(k);
  return`<div class="card"><b>${G(dt.getDate())} ${MN[dt.getMonth()]} ${G(dt.getFullYear())}, ${WD[dt.getDay()]}</b><div class="sm">${dt.getDate()} ${dt.toLocaleString('en',{month:'long'})} ${dt.getFullYear()}, ${dt.toLocaleString('en',{weekday:'long'})}</div>
  ${fs.map(f=>`<div>🪔 ${E(f.n)} ${f.v?'<span class="tag">ચકાસેલ</span>':'<span class="tag">ચકાસણી બાકી</span>'}${f.tithi?`<div class="sm">તિથિ: ${E(f.tithi)} ${f.paksha?E(f.paksha):''} ${f.nak?'• નક્ષત્ર: '+E(f.nak):''}</div>`:''}</div>`).join('')||'<div class="sm">આ દિવસે કોઈ તહેવાર નોંધાયેલ નથી.</div>'}
- ${bs.map(b=>`<div>🎂 ${E(b.name)}નો જન્મદિવસ${age(b,dt.getFullYear())!=null?' ('+G(age(b,dt.getFullYear()))+' વર્ષ)':''}</div>`).join('')}</div>`}
+ ${bs.map(b=>`<div class="row" style="justify-content:flex-start;margin-top:8px">${b.photo?`<img class="bphoto" src="${b.photo}" alt="${E(b.name)}">`:''}<span>🎂 ${E(b.name)}નો જન્મદિવસ${age(b,dt.getFullYear())!=null?' ('+G(age(b,dt.getFullYear()))+' વર્ષ)':''}</span></div>`).join('')}</div>`}
 function vHome(){const t=todayK();const up=F.fixed.concat(F.lunar).map(f=>{const y=+t.slice(0,4);let k=f.d||[y,y+1].map(yy=>yy+'-'+f.md).find(x=>x>=t);return{n:f.n,k}}).filter(f=>f.k&&f.k>=t).sort((a,b)=>a.k<b.k?-1:1).slice(0,4);
  return dayCard(t)+`<h3>આગામી તહેવારો</h3>`+up.map(f=>`<div class="card row"><span>${E(f.n)}</span><span class="sm">${G(+f.k.slice(8))} ${MN[+f.k.slice(5,7)-1]}</span></div>`).join('')+
  `<h3>આગામી જન્મદિવસો</h3>`+(upcoming(3).map(bdRow).join('')||'<div class="card sm">હજી કોઈ જન્મદિવસ ઉમેર્યો નથી.</div>')+
@@ -78,16 +79,24 @@ const jump=()=>{const v=document.getElementById('jd').value;if(!v)return;sel=v;c
 function vBd(){if(edit){const b=edit;return`<div class="card"><b>${b.id?'જન્મદિવસ સુધારો':'નવો જન્મદિવસ ઉમેરો'}</b><br>નામ<input id="fn" value="${E(b.name)}" placeholder="દા.ત. રમેશભાઈ">
  <div class="row"><div>દિવસ<input id="fd" type="number" min="1" max="31" value="${b.d||''}"></div><div>મહિનો<select id="fm">${MN.map((m,i)=>`<option value="${i+1}" ${b.m==i+1?'selected':''}>${m}</option>`).join('')}</select></div></div>
  જન્મ વર્ષ (વૈકલ્પિક)<input id="fy" type="number" min="1900" max="2100" value="${b.y||''}">નોંધ (વૈકલ્પિક)<textarea id="fo">${E(b.note)}</textarea>
+ <label for="bphoto">🎂 જન્મદિવસનો ફોટો (વૈકલ્પિક)</label><input id="bphoto" type="file" accept="image/*" onchange="loadBirthdayPhoto(this)"><div class="photo-preview">${b.photo?`<img class="bphoto big" src="${b.photo}" alt="ફોટો"><button class="g" onclick="edit.photo='';render()">ફોટો દૂર કરો</button>`:`<span class="photo-note">ફોટો પસંદ કરો. ફોટો આ ફોનમાં જ સાચવાશે.</span>`}</div>
  <label><input type="checkbox" id="fon" style="width:auto;min-height:0" ${b.on?'checked':''}> યાદ અપાવો (સૂચના)</label>
  <div class="row"><button class="g" onclick="edit=null;render()">રદ કરો</button><button onclick="saveB()">સાચવો</button></div></div>`}
  const l=S.bd.filter(b=>b.name.includes(q));
  return`<button onclick="edit={name:'',on:true};render()" style="width:100%">➕ નવો જન્મદિવસ ઉમેરો</button><input placeholder="🔍 નામથી શોધો" value="${E(q)}" oninput="q=this.value;render(true)" id="sq" style="margin-top:10px">
  <h3>આગામી જન્મદિવસો</h3>${upcoming(5).filter(u=>u.b.name.includes(q)).map(bdRow).join('')||'<div class="sm">કોઈ નથી.</div>'}<h3>બધા (${G(l.length)})</h3>
- ${l.map(b=>`<div class="card"><b>${E(b.name)}</b> <span class="sm">${G(b.d)} ${MN[b.m-1]}${b.y?' '+G(b.y):''} ${b.on?'🔔':'🔕'}</span><div class="sm">${E(b.note)}</div><div class="row"><button class="g" onclick="edit=S.bd.find(x=>x.id==${b.id});render()">✏️ સુધારો</button><button class="d" onclick="delB(${b.id})">🗑️ કાઢી નાખો</button></div></div>`).join('')}`}
+ ${l.map(b=>`<div class="card"><div class="row" style="justify-content:flex-start">${b.photo?`<img class="bphoto" src="${b.photo}" alt="${E(b.name)}">`:``}<div><b>${E(b.name)}</b><div class="sm">${G(b.d)} ${MN[b.m-1]}${b.y?' '+G(b.y):''} ${b.on?'🔔':'🔕'}</div></div></div><div class="sm">${E(b.note)}</div><div class="row"><button class="g" onclick="edit=S.bd.find(x=>x.id==${b.id});render()">✏️ સુધારો</button><button class="d" onclick="delB(${b.id})">🗑️ કાઢી નાખો</button></div></div>`).join('')}`}
+async function loadBirthdayPhoto(input){
+ const file=input.files&&input.files[0];if(!file)return;
+ if(!file.type.startsWith('image/')){alert('કૃપા કરીને ફોટો ફાઇલ પસંદ કરો.');return;}
+ if(file.size>12*1024*1024){alert('ફોટો 12 MB કરતાં નાનો પસંદ કરો.');input.value='';return;}
+ try{const data=await new Promise((resolve,reject)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const max=640,scale=Math.min(1,max/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);resolve(canvas.toDataURL('image/jpeg',0.78));};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('image'));};img.src=url;});edit.photo=data;render();}
+ catch(e){alert('ફોટો વાંચી શકાયો નથી. બીજો ફોટો પસંદ કરો.');}
+}
 async function saveB(){const g=i=>document.getElementById(i),name=g('fn').value.trim(),d=+g('fd').value,m=+g('fm').value,y=+g('fy').value||null;
  if(!name)return alert('કૃપા કરી નામ લખો.');if(!(d>=1&&d<=new Date(2000,m,0).getDate()))return alert('કૃપા કરી સાચો દિવસ લખો.');
  if(y&&new Date(y,m-1,d)>new Date())return alert('જન્મ તારીખ ભવિષ્યની ન હોઈ શકે.');
- const o={name,d,m,y,note:g('fo').value,on:g('fon').checked};
+ const o={name,d,m,y,note:g('fo').value,on:g('fon').checked,photo:edit.photo||''};
  if(edit.id)Object.assign(S.bd.find(x=>x.id==edit.id),o);else S.bd.push({...o,id:S.nid++});
  edit=null;await save();if(perm=='prompt'||perm=='prompt-with-rationale')await askPerm();render()}
 async function delB(id){if(!confirm('શું તમે ખરેખર કાઢી નાખવા માંગો છો?'))return;S.bd=S.bd.filter(b=>b.id!=id);await save();render()}
