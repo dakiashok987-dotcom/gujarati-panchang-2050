@@ -1,0 +1,111 @@
+<!doctype html><html lang="gu"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ગુજરાતી પંચાંગ 2050</title>
+<style>
+:root{--bg:#fff8ec;--c:#fff;--t:#3a1c0a;--p:#c2410c;--s:#7c2d12;--r:#dc2626;--b:#f1d9b5}
+body.dk{--bg:#1c1410;--c:#2b2019;--t:#f6e7d4;--p:#f59e0b;--s:#fdba74;--r:#f87171;--b:#4a3626}
+*{box-sizing:border-box}body{margin:0;font:17px/1.5 "Noto Sans Gujarati","Shruti",sans-serif;background:var(--bg);color:var(--t);padding:env(safe-area-inset-top) 0 80px}
+h1{margin:0;padding:14px 16px;background:var(--p);color:#fff;font-size:20px}
+.w{padding:12px}.card{background:var(--c);border:1px solid var(--b);border-radius:14px;padding:12px;margin:10px 0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{min-height:48px;padding:8px 14px;border:0;border-radius:12px;background:var(--p);color:#fff}
+button.g{background:var(--c);color:var(--t);border:1px solid var(--b)}button.d{background:var(--r)}
+input,select,textarea{width:100%;min-height:46px;padding:8px;margin:4px 0 10px;background:var(--c);border:1px solid var(--b);border-radius:10px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--c);border-top:1px solid var(--b);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;color:var(--t);border-radius:0;font-size:13px}nav button.on{color:var(--p);font-weight:700}
+.gr{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.gr div{min-height:50px;border-radius:8px;padding:2px;font-size:15px}.gr .c{background:var(--c);border:1px solid var(--b)}
+.td{outline:3px solid var(--p)}.sel{background:var(--b)!important}.rd{color:var(--r)}.dot{font-size:9px;color:var(--p)}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between}.sm{font-size:14px;opacity:.8}.tag{font-size:12px;border:1px solid var(--p);border-radius:8px;padding:0 6px}
+</style></head><body><h1>🪔 ગુજરાતી પંચાંગ 2050</h1><div class="w" id="app"></div>
+<nav id="nav"></nav>
+<script>
+const WD=['રવિવાર','સોમવાર','મંગળવાર','બુધવાર','ગુરુવાર','શુક્રવાર','શનિવાર'],WS=['રવિ','સોમ','મંગળ','બુધ','ગુરુ','શુક્ર','શનિ'];
+const MN=['જાન્યુઆરી','ફેબ્રુઆરી','માર્ચ','એપ્રિલ','મે','જૂન','જુલાઈ','ઑગસ્ટ','સપ્ટેમ્બર','ઑક્ટોબર','નવેમ્બર','ડિસેમ્બર'];
+const G=n=>String(n).replace(/\d/g,d=>'૦૧૨૩૪૫૬૭૮૯'[d]),P=n=>String(n).padStart(2,'0');
+const E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const leap=y=>y%4==0&&(y%100!=0||y%400==0),key=(y,m,d)=>`${y}-${P(m)}-${P(d)}`;
+const todayK=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+const dbp=new Promise(r=>{const q=indexedDB.open('panchang',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>r(q.result)});
+const kvGet=async k=>{const d=await dbp;return new Promise(r=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result)})};
+const kvSet=async(k,v)=>{const d=await dbp;return new Promise(r=>{const t=d.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=r})};
+let S={bd:[],nid:1,set:{t1:'09:00',t0:'08:00',dark:false,url:''}},F={fixed:[],lunar:[]},tab='home',cy,cm,sel,edit=null,q='',perm='';
+const save=async()=>{await kvSet('s',S);resched()};
+// festivals
+const fest=k=>{const[y,m,d]=k.split('-');return[...F.fixed.filter(f=>f.md==`${m}-${d}`).map(f=>({...f,v:1})),...F.lunar.filter(f=>f.d==k)]};
+const holiday=k=>new Date(k+'T00:00:00').getDay()==0||fest(k).some(f=>f.h);
+// birthdays
+const occ=(b,y)=>b.m==2&&b.d==29&&!leap(y)?[2,28]:[b.m,b.d];
+const bdOn=k=>{const[y,m,d]=k.split('-').map(Number);return S.bd.filter(b=>{const o=occ(b,y);return o[0]==m&&o[1]==d})};
+const age=(b,y)=>b.y?y-b.y:null;
+function nextBd(b){const t=todayK(),y=+t.slice(0,4);for(const yy of[y,y+1]){const o=occ(b,yy),k=key(yy,o[0],o[1]);if(k>=t)return{k,y:yy,days:Math.round((new Date(k)-new Date(t))/864e5)}}}
+const upcoming=n=>S.bd.map(b=>({b,...nextBd(b)})).sort((a,c)=>a.days-c.days).slice(0,n);
+const bdRow=u=>`<div class="card row"><div><b>${E(u.b.name)}</b><div class="sm">${G(+u.k.slice(8))} ${MN[+u.k.slice(5,7)-1]}${age(u.b,u.y)!=null?' • ઉંમર '+G(age(u.b,u.y))+' વર્ષ':''} • ${u.days==0?'આજે':u.days==1?'કાલે':G(u.days)+' દિવસ બાકી'}</div></div></div>`;
+// notifications
+const N=()=>window.Capacitor?.Plugins?.LocalNotifications;
+async function checkPerm(){const n=N();if(!n){perm='web';return}perm=(await n.checkPermissions()).display}
+async function askPerm(){const n=N();if(n){perm=(await n.requestPermissions()).display;await resched()}render()}
+async function resched(){const n=N();if(!n)return;try{
+ const p=await n.getPending();if(p.notifications.length)await n.cancel({notifications:p.notifications});
+ await checkPerm();if(perm!='granted')return;
+ const list=[],tm=s=>s.split(':').map(Number),now=new Date();
+ for(const b of S.bd){if(!b.on)continue;
+  for(const off of[1,0]){const[h,mi]=tm(off?S.set.t1:S.set.t0);
+   const body=off?`કાલે ${b.name}નો જન્મદિવસ છે. શુભેચ્છા આપવાનું ભૂલશો નહીં!`:`આજે ${b.name}નો જન્મદિવસ છે. જન્મદિવસની હાર્દિક શુભેચ્છાઓ!`;
+   const title='🎂 જન્મદિવસ',base=b.id*100+off*50;
+   if(b.m==2&&b.d==29){for(let i=0,y=now.getFullYear();i<8;y++){const o=occ(b,y),dt=new Date(y,o[0]-1,o[1]-off,h,mi);if(dt>now){list.push({id:base+i,title,body,schedule:{at:dt,allowWhileIdle:true}});i++}}}
+   else{const dt=new Date(2001,b.m-1,b.d-off);list.push({id:base,title,body,schedule:{on:{month:dt.getMonth()+1,day:dt.getDate(),hour:h,minute:mi},allowWhileIdle:true}})}}}
+ if(list.length)await n.schedule({notifications:list})}catch(e){console.error(e)}}
+// views
+const nav=()=>{document.getElementById('nav').innerHTML=[['home','🏠','હોમ'],['cal','📅','કેલેન્ડર'],['bd','🎂','જન્મદિવસ'],['fe','🪔','તહેવાર'],['st','⚙️','સેટિંગ']].map(([k,i,t])=>`<button class="${tab==k?'on':''}" onclick="go('${k}')">${i}<br>${t}</button>`).join('')};
+const go=t=>{tab=t;edit=null;render()};
+function dayCard(k){const dt=new Date(k+'T00:00:00'),fs=fest(k),bs=bdOn(k);
+ return`<div class="card"><b>${G(dt.getDate())} ${MN[dt.getMonth()]} ${G(dt.getFullYear())}, ${WD[dt.getDay()]}</b><div class="sm">${dt.getDate()} ${dt.toLocaleString('en',{month:'long'})} ${dt.getFullYear()}, ${dt.toLocaleString('en',{weekday:'long'})}</div>
+ ${fs.map(f=>`<div>🪔 ${E(f.n)} ${f.v?'<span class="tag">ચકાસેલ</span>':'<span class="tag">ચકાસણી બાકી</span>'}${f.tithi?`<div class="sm">તિથિ: ${E(f.tithi)} ${f.paksha?E(f.paksha):''} ${f.nak?'• નક્ષત્ર: '+E(f.nak):''}</div>`:''}</div>`).join('')||'<div class="sm">આ દિવસે કોઈ તહેવાર નોંધાયેલ નથી.</div>'}
+ ${bs.map(b=>`<div>🎂 ${E(b.name)}નો જન્મદિવસ${age(b,dt.getFullYear())!=null?' ('+G(age(b,dt.getFullYear()))+' વર્ષ)':''}</div>`).join('')}</div>`}
+function vHome(){const t=todayK();const up=F.fixed.concat(F.lunar).map(f=>{const y=+t.slice(0,4);let k=f.d||[y,y+1].map(yy=>yy+'-'+f.md).find(x=>x>=t);return{n:f.n,k}}).filter(f=>f.k&&f.k>=t).sort((a,b)=>a.k<b.k?-1:1).slice(0,4);
+ return dayCard(t)+`<h3>આગામી તહેવારો</h3>`+up.map(f=>`<div class="card row"><span>${E(f.n)}</span><span class="sm">${G(+f.k.slice(8))} ${MN[+f.k.slice(5,7)-1]}</span></div>`).join('')+
+ `<h3>આગામી જન્મદિવસો</h3>`+(upcoming(3).map(bdRow).join('')||'<div class="card sm">હજી કોઈ જન્મદિવસ ઉમેર્યો નથી.</div>')+
+ `<div class="row"><button onclick="go('cal')">📅 કેલેન્ડર</button><button onclick="go('bd')">🎂 જન્મદિવસ</button></div>`}
+function vCal(){const first=new Date(cy,cm,1).getDay(),n=new Date(cy,cm+1,0).getDate(),t=todayK();
+ let g=WS.map((w,i)=>`<div class="${i==0?'rd':''}"><b>${w}</b></div>`).join('')+'<div></div>'.repeat(first);
+ for(let d=1;d<=n;d++){const k=key(cy,cm+1,d);g+=`<div class="c ${k==t?'td':''} ${k==sel?'sel':''} ${holiday(k)?'rd':''}" onclick="sel='${k}';render()">${G(d)}<div class="dot">${fest(k).length?'🪔':''}${bdOn(k).length?'🎂':''}</div></div>`}
+ return`<div class="row"><button class="g" onclick="mv(-12)">«</button><button class="g" onclick="mv(-1)">‹</button><b>${MN[cm]} ${G(cy)}</b><button class="g" onclick="mv(1)">›</button><button class="g" onclick="mv(12)">»</button></div>
+ <div class="row" style="margin:8px 0"><input type="date" id="jd" value="${sel||todayK()}" min="1900-01-01" max="2100-12-31"><button onclick="jump()">જાઓ</button></div><div class="gr">${g}</div>${sel?dayCard(sel):''}
+ <div class="sm">લાલ રંગ = રવિવાર/જાહેર રજા • 🪔 તહેવાર • 🎂 જન્મદિવસ</div>`}
+const mv=n=>{const x=cy*12+cm+n;cy=Math.floor(x/12);cm=x%12;render()};
+const jump=()=>{const v=document.getElementById('jd').value;if(!v)return;sel=v;cy=+v.slice(0,4);cm=+v.slice(5,7)-1;render()};
+function vBd(){if(edit){const b=edit;return`<div class="card"><b>${b.id?'જન્મદિવસ સુધારો':'નવો જન્મદિવસ ઉમેરો'}</b><br>નામ<input id="fn" value="${E(b.name)}" placeholder="દા.ત. રમેશભાઈ">
+ <div class="row"><div>દિવસ<input id="fd" type="number" min="1" max="31" value="${b.d||''}"></div><div>મહિનો<select id="fm">${MN.map((m,i)=>`<option value="${i+1}" ${b.m==i+1?'selected':''}>${m}</option>`).join('')}</select></div></div>
+ જન્મ વર્ષ (વૈકલ્પિક)<input id="fy" type="number" min="1900" max="2100" value="${b.y||''}">નોંધ (વૈકલ્પિક)<textarea id="fo">${E(b.note)}</textarea>
+ <label><input type="checkbox" id="fon" style="width:auto;min-height:0" ${b.on?'checked':''}> યાદ અપાવો (સૂચના)</label>
+ <div class="row"><button class="g" onclick="edit=null;render()">રદ કરો</button><button onclick="saveB()">સાચવો</button></div></div>`}
+ const l=S.bd.filter(b=>b.name.includes(q));
+ return`<button onclick="edit={name:'',on:true};render()" style="width:100%">➕ નવો જન્મદિવસ ઉમેરો</button><input placeholder="🔍 નામથી શોધો" value="${E(q)}" oninput="q=this.value;render(true)" id="sq" style="margin-top:10px">
+ <h3>આગામી જન્મદિવસો</h3>${upcoming(5).filter(u=>u.b.name.includes(q)).map(bdRow).join('')||'<div class="sm">કોઈ નથી.</div>'}<h3>બધા (${G(l.length)})</h3>
+ ${l.map(b=>`<div class="card"><b>${E(b.name)}</b> <span class="sm">${G(b.d)} ${MN[b.m-1]}${b.y?' '+G(b.y):''} ${b.on?'🔔':'🔕'}</span><div class="sm">${E(b.note)}</div><div class="row"><button class="g" onclick="edit=S.bd.find(x=>x.id==${b.id});render()">✏️ સુધારો</button><button class="d" onclick="delB(${b.id})">🗑️ કાઢી નાખો</button></div></div>`).join('')}`}
+async function saveB(){const g=i=>document.getElementById(i),name=g('fn').value.trim(),d=+g('fd').value,m=+g('fm').value,y=+g('fy').value||null;
+ if(!name)return alert('કૃપા કરી નામ લખો.');if(!(d>=1&&d<=new Date(2000,m,0).getDate()))return alert('કૃપા કરી સાચો દિવસ લખો.');
+ if(y&&new Date(y,m-1,d)>new Date())return alert('જન્મ તારીખ ભવિષ્યની ન હોઈ શકે.');
+ const o={name,d,m,y,note:g('fo').value,on:g('fon').checked};
+ if(edit.id)Object.assign(S.bd.find(x=>x.id==edit.id),o);else S.bd.push({...o,id:S.nid++});
+ edit=null;await save();if(perm=='prompt'||perm=='prompt-with-rationale')await askPerm();render()}
+async function delB(id){if(!confirm('શું તમે ખરેખર કાઢી નાખવા માંગો છો?'))return;S.bd=S.bd.filter(b=>b.id!=id);await save();render()}
+function vFe(){const y=cy,all=[...F.fixed.map(f=>({n:f.n,k:y+'-'+f.md,v:1})),...F.lunar.filter(f=>f.d.startsWith(y)).map(f=>({n:f.n,k:f.d,v:f.v}))].filter(f=>f.n.includes(q)).sort((a,b)=>a.k<b.k?-1:1);
+ return`<div class="row"><button class="g" onclick="mv(-12)">‹</button><b>${G(y)}</b><button class="g" onclick="mv(12)">›</button></div><input id="sq" placeholder="🔍 તહેવારનું નામ શોધો" value="${E(q)}" oninput="q=this.value;render(true)">
+ <select onchange="cm=+this.value;render()"><option value="-1">બધા મહિના</option>${MN.map((m,i)=>`<option value="${i}">${m}</option>`).join('')}</select>
+ ${all.filter(f=>cm<0||+f.k.slice(5,7)-1==cm).map(f=>`<div class="card row"><span>${E(f.n)}</span><span class="sm">${G(+f.k.slice(8))} ${MN[+f.k.slice(5,7)-1]} ${f.v?'':'(ચકાસણી બાકી)'}</span></div>`).join('')}
+ ${F.lunar.length?'':'<div class="card sm">ચંદ્ર-તિથિ આધારિત તહેવારો (દિવાળી, નવરાત્રી, હોળી વગેરે) માટે ચકાસેલ ડેટા હજી ઉમેરાયો નથી. સેટિંગમાં "તહેવાર ડેટા અપડેટ" વાપરો અથવા festivals.json ભરો.</div>'}`}
+function vSt(){const ps={granted:'✅ સૂચનાની પરવાનગી ચાલુ છે.',denied:'⚠️ સૂચનાની પરવાનગી બંધ છે. ફોન સેટિંગ → એપ્સ → ગુજરાતી પંચાંગ → સૂચનાઓ ચાલુ કરો.',web:'ℹ️ સૂચનાઓ ફક્ત Android એપમાં કામ કરે છે.'}[perm]||'સૂચનાની પરવાનગી હજી આપી નથી.';
+ return`<div class="card"><b>🔔 સૂચનાઓ</b><p>${ps}</p><button onclick="askPerm()">પરવાનગી આપો</button>
+ <p>આગલા દિવસની સૂચનાનો સમય<input type="time" value="${S.set.t1}" onchange="S.set.t1=this.value;save()"></p><p>જન્મદિવસ પર સૂચનાનો સમય<input type="time" value="${S.set.t0}" onchange="S.set.t0=this.value;save()"></p></div>
+ <div class="card"><b>🎨 દેખાવ</b><br><button class="g" onclick="S.set.dark=!S.set.dark;save();render()">${S.set.dark?'☀️ લાઇટ મોડ':'🌙 ડાર્ક મોડ'}</button></div>
+ <div class="card"><b>🪔 તહેવાર ડેટા અપડેટ</b><p class="sm">festivals.json ની ઑનલાઇન લિંક (https://...) લખો.</p><input id="fu" value="${E(S.set.url)}" placeholder="https://..."><button onclick="upd()">અપડેટ કરો</button><div class="sm">હાલ: ${G(F.fixed.length)} નિશ્ચિત, ${G(F.lunar.length)} ચંદ્ર-તિથિ તહેવારો</div></div>
+ <div class="card sm">🔒 તમારો બધો ડેટા ફક્ત આ ફોનમાં સંગ્રહાયેલ છે. કોઈ એકાઉન્ટ જરૂરી નથી.</div>`}
+async function upd(){S.set.url=document.getElementById('fu').value.trim();await save();try{const j=await(await fetch(S.set.url)).json();if(!Array.isArray(j.fixed)||!Array.isArray(j.lunar))throw 0;F=j;await kvSet('f',F);alert('✅ ડેટા અપડેટ થયો.')}catch(e){alert('❌ અપડેટ નિષ્ફળ. લિંક અને ફાઇલ તપાસો.')}render()}
+function render(keep){document.body.classList.toggle('dk',!!S.set.dark);nav();const v={home:vHome,cal:vCal,bd:vBd,fe:vFe,st:vSt}[tab];document.getElementById('app').innerHTML=v();
+ if(keep){const i=document.getElementById('sq');if(i){i.focus();i.setSelectionRange(99,99)}}}
+(async()=>{const t=todayK();cy=+t.slice(0,4);cm=+t.slice(5,7)-1;sel=t;
+ try{F=await(await fetch('festivals.json')).json()}catch(e){}const c=await kvGet('f');if(c&&c.version>=F.version)F=c;
+ const s=await kvGet('s');if(s)S={...S,...s,set:{...S.set,...s.set}};await checkPerm();render();await resched()})();
+</script></body></html>
