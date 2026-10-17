@@ -95,6 +95,7 @@ function vFe(){const y=cy,all=[...F.fixed.map(f=>({n:f.n,k:y+'-'+f.md,v:1})),...
  return`<div class="row"><button class="g" onclick="mv(-12)">‹</button><b>${G(y)}</b><button class="g" onclick="mv(12)">›</button></div><input id="sq" placeholder="🔍 તહેવારનું નામ શોધો" value="${E(q)}" oninput="q=this.value;render(true)">
  <select onchange="cm=+this.value;render()"><option value="-1">બધા મહિના</option>${MN.map((m,i)=>`<option value="${i}">${m}</option>`).join('')}</select>
  ${all.filter(f=>cm<0||+f.k.slice(5,7)-1==cm).map(f=>`<div class="card row"><span>${E(f.n)}</span><span class="sm">${G(+f.k.slice(8))} ${MN[+f.k.slice(5,7)-1]} ${f.v?'':'(ચકાસણી બાકી)'}</span></div>`).join('')}
+ ${F.lunar.some(f=>!f.v)?'<div class="card sm">ℹ️ “ચકાસણી બાકી” = તારીખ ખગોળીય ગણતરીથી મેળવેલી છે (અમદાવાદ, અમાંત માસ). છાપેલા પંચાંગ સાથે મેળવીને જ ઉપયોગ કરો.</div>':''}
  ${F.lunar.length?'':'<div class="card sm">ચંદ્ર-તિથિ આધારિત તહેવારો (દિવાળી, નવરાત્રી, હોળી વગેરે) માટે ચકાસેલ ડેટા હજી ઉમેરાયો નથી. સેટિંગમાં "તહેવાર ડેટા અપડેટ" વાપરો અથવા festivals.json ભરો.</div>'}`}
 function vSt(){const ps={granted:'✅ સૂચનાની પરવાનગી ચાલુ છે.',denied:'⚠️ સૂચનાની પરવાનગી બંધ છે. ફોન સેટિંગ → એપ્સ → ગુજરાતી પંચાંગ → સૂચનાઓ ચાલુ કરો.',web:'ℹ️ સૂચનાઓ ફક્ત Android એપમાં કામ કરે છે.'}[perm]||'સૂચનાની પરવાનગી હજી આપી નથી.';
  return`<div class="card"><b>🔔 સૂચનાઓ</b><p>${ps}</p><button onclick="askPerm()">પરવાનગી આપો</button>
